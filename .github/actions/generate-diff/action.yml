@@ -77,7 +77,8 @@ runs:
             --local ${{ inputs.local-path }} \
             --repo ${{ inputs.repository }} \
             --format ${{ inputs.format }} \
-            --output ${{ inputs.output-file }}
+            --output ${{ inputs.output-file }} \
+            --githubAPIKey "$GITHUB_TOKEN"
         elif [[ "${{ inputs.tool }}" == "component-diff-generator" ]]; then
           # Component diff generator CLI. Same local-vs-remote-base strategy
           # as above, for the same fork-PR reason.
