@@ -8,7 +8,7 @@
     "sets": {
       "desktop": {
         "$schema": "https://opensource.adobe.com/spectrum-design-data/schemas/token-types/dimension.json",
-        "value": "8px",
+        "value": "9px",
         "uuid": "7a576841-a2a5-4443-9d31-03a12c7a2efd"
       },
       "mobile": {
